@@ -1,0 +1,36 @@
+# Import Bot Framework dependencies
+from botbuilder.core import ActivityHandler, TurnContext
+from botbuilder.schema import ChannelAccount
+
+# Import LUIS dependencies
+from azure.cognitiveservices.language.luis.runtime import LUISRuntimeClient
+from msrest.authentication import CognitiveServicesCredentials
+
+# LUIS app credentials
+LUIS_app_id = 'YOUR_LUIS_APP_ID' 
+LUIS_endpoint_key = 'YOUR_LUIS_ENDPOINT_KEY'
+LUIS_endpoint = 'YOUR_LUIS_ENDPOINT_URL'
+
+# Create LUIS runtime client
+luis_runtime_client = LUISRuntimeClient(endpoint=LUIS_endpoint, credentials=CognitiveServicesCredentials(LUIS_endpoint_key))
+
+class MyBot(ActivityHandler):
+
+    async def on_message_activity(self, turn_context: TurnContext):
+        
+        # Get user utterance
+        user_utterance = turn_context.activity.text
+        
+        # Get LUIS predictions
+        luis_response = luis_runtime_client.prediction.get_slot_prediction(LUIS_app_id, {'query' : user_utterance})
+        
+        # Extract top intent
+        top_intent = luis_response.prediction.top_intent
+        
+        # Dispatch bot response based on intent
+        if top_intent == 'Greeting':
+            await turn_context.send_activity('Hello!')
+        elif top_intent == 'Help':
+            await turn_context.send_activity('How can I assist you today?')
+        else:
+            await turn_context.send_activity('Sorry, I did not understand that.')
